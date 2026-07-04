@@ -76,7 +76,7 @@ end)
 
 -- Config
 local SCRIPT_NAME = "FLUYEN"
-local SCRIPT_VERSION = "v5.0"
+local SCRIPT_VERSION = "v5.1"
 
 -- ============================================================
 -- KEY SYSTEM - key = huyandkhang
@@ -107,6 +107,7 @@ local States = {
     AntiAFK=true, FreezeTime=false, FPSBoost=false,
     AntiBlind=false, AntiSlow=false, AntiRagdoll=false, AntiGrab=false,
     Spin=false, Float=false, Bang=false, Fling=false, Invisible=false, OrbitActive=false,
+    LowGravity=false, Freecam=false,
     AutoLoadSettings=false, MinimizeButton=true, DraggableGUI=true, Notifications=true,
 }
 
@@ -114,6 +115,7 @@ local Values = {
     SpeedValue=16, FlySpeed=50, JumpPowerValue=50, SprintSpeed=24,
     SpinSpeed=10, AimFOVValue=90, AimSmoothness=5, HitboxSize=10,
     OrbitRadius=5, OrbitSpeed=1, FlingPower=500, FieldOfView=70,
+    LowGravityValue=50,
 }
 
 -- Connections
@@ -210,6 +212,8 @@ Langs.EN = {
     PlayerList="Player List", SpectatePlayer="Spectate Player",
     Spin="Spin", Float="Float", Bang="Bang", Fling="Fling",
     OrbitPlayer="Orbit Player", Invisible="Invisible",
+    LowGravity="Low Gravity", LowGravityValue="Gravity Level", Freecam="Freecam",
+    Respawn="Respawn", TeleportToSpawn="Teleport to Spawn",
     SpinSpeed="Spin Speed", OrbitRadius="Orbit Radius", OrbitSpeed="Orbit Speed", FlingPower="Fling Power",
     Theme="Theme", Language="Language", GUI="GUI Settings",
     SaveSettings="Save Settings", AutoLoadSettings="Auto Load Settings",
@@ -244,6 +248,8 @@ Langs.VI = {
     PlayerList="Danh Sach", SpectatePlayer="Theo Doi",
     Spin="Xoay", Float="Bay Lang", Bang="Dam", Fling="Nem",
     OrbitPlayer="Quay Quanh", Invisible="Vo Hinh",
+    LowGravity="Trong Luc Thap", LowGravityValue="Muc Trong Luc", Freecam="Cam Tu Do",
+    Respawn="Hoi Sinh", TeleportToSpawn="Dich Den Sinh",
     SpinSpeed="Toc Do Xoay", OrbitRadius="Ban Kinh", OrbitSpeed="Toc Do Quay", FlingPower="Luc Nem",
     Theme="Giao Dien", Language="Ngon Ngu", GUI="Cai Dat GUI",
     SaveSettings="Luu", AutoLoadSettings="Tu Dong Tai",
@@ -277,6 +283,8 @@ Langs.ES = {
     PlayerList="Jugadores", SpectatePlayer="Espectar",
     Spin="Girar", Float="Flotar", Bang="Golpear", Fling="Lanzar",
     OrbitPlayer="Orbitar", Invisible="Invisible",
+    LowGravity="Gravedad Baja", LowGravityValue="Nivel Gravedad", Freecam="Cam Libre",
+    Respawn="Revivir", TeleportToSpawn="Teletransporte al Spawn",
     SpinSpeed="Vel. Giro", OrbitRadius="Radio Orbita", OrbitSpeed="Vel. Orbita", FlingPower="Fuerza Lanzar",
     Theme="Tema", Language="Idioma", GUI="Interfaz",
     SaveSettings="Guardar", AutoLoadSettings="Auto Cargar",
@@ -310,6 +318,8 @@ Langs.PT = {
     PlayerList="Jogadores", SpectatePlayer="Espectar",
     Spin="Girar", Float="Flutuar", Bang="Bater", Fling="Arremessar",
     OrbitPlayer="Orbitar", Invisible="Invisivel",
+    LowGravity="Gravidade Baixa", LowGravityValue="Nivel Gravidade", Freecam="Cam Livre",
+    Respawn="Renascer", TeleportToSpawn="Teleporte ao Spawn",
     SpinSpeed="Vel. Giro", OrbitRadius="Raio Orbita", OrbitSpeed="Vel. Orbita", FlingPower="Forca Arremesso",
     Theme="Tema", Language="Idioma", GUI="Interface",
     SaveSettings="Salvar", AutoLoadSettings="Auto Carregar",
@@ -343,6 +353,8 @@ Langs.RU = {
     PlayerList="Igroki", SpectatePlayer="Nablyudat",
     Spin="Vrashenie", Float="Parit", Bang="Udar", Fling="Brosit",
     OrbitPlayer="Orbita", Invisible="Nevidimost",
+    LowGravity="Slabaya Gravitaciya", LowGravityValue="Uroven Gravitacii", Freecam="Svobodnaya Kamera",
+    Respawn="Vozrodit", TeleportToSpawn="Teleport na Spawn",
     SpinSpeed="Skorost Vrasheniya", OrbitRadius="Radius Orbiy", OrbitSpeed="Skorost Orbiy", FlingPower="Sila Broska",
     Theme="Tema", Language="Yazik", GUI="Interfeis",
     SaveSettings="Sokhranit", AutoLoadSettings="Avtosapusk",
@@ -486,6 +498,21 @@ playerCountLabel.ZIndex = 50
 playerCountLabel.Parent = espGui
 Instance.new("UICorner", playerCountLabel).CornerRadius = UDim.new(0, 4)
 
+-- FPS Counter Label
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Name = "FPS"
+fpsLabel.Size = UDim2.new(0, 80, 0, 24)
+fpsLabel.Position = UDim2.new(0, 10, 0, 38)
+fpsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+fpsLabel.BackgroundTransparency = 0.5
+fpsLabel.Text = "FPS: 60"
+fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+fpsLabel.Font = Enum.Font.GothamBold
+fpsLabel.TextSize = 11
+fpsLabel.ZIndex = 50
+fpsLabel.Parent = espGui
+Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0, 4)
+
 -- Tracer Lines container (we use Frames as lines)
 local tracerContainer = Instance.new("Frame")
 tracerContainer.Name = "Tracers"
@@ -493,6 +520,19 @@ tracerContainer.Size = UDim2.new(1, 0, 1, 0)
 tracerContainer.BackgroundTransparency = 1
 tracerContainer.ZIndex = 48
 tracerContainer.Parent = espGui
+
+-- Convergence point dot at top center of screen (where all tracer lines converge)
+local tracerDot = Instance.new("Frame")
+tracerDot.Name = "TracerDot"
+tracerDot.Size = UDim2.new(0, 8, 0, 8)
+tracerDot.Position = UDim2.new(0.5, -4, 0, -2)
+tracerDot.BackgroundColor3 = Color3.fromRGB(255, 107, 53)
+tracerDot.BorderSizePixel = 0
+tracerDot.BackgroundTransparency = 0.2
+tracerDot.ZIndex = 50
+tracerDot.Visible = false
+tracerDot.Parent = espGui
+Instance.new("UICorner", tracerDot).CornerRadius = UDim.new(0, 4)
 
 -- Key Status Label (always visible)
 local keyStatusLabel = Instance.new("TextLabel")
@@ -615,7 +655,7 @@ sidebarPad.Parent = sidebar
 local contentArea = Instance.new("Frame")
 contentArea.Size = UDim2.new(1, -90, 1, -30)
 contentArea.Position = UDim2.new(0, 90, 0, 30)
-contentArea.BackgroundTransparency = 1
+contentArea.BackgroundTransparency = 0.999
 contentArea.ClipsDescendants = true
 contentArea.ZIndex = 5
 contentArea.Parent = mainFrame
@@ -640,13 +680,14 @@ for _, tabDef in ipairs(TabDefs) do
     local page = Instance.new("ScrollingFrame")
     page.Name = "Page_" .. name
     page.Size = UDim2.new(1, 0, 1, 0)
-    page.BackgroundTransparency = 1
+    page.BackgroundTransparency = 0.999
     page.BorderSizePixel = 0
     page.ScrollBarThickness = 4
     page.ScrollBarImageColor3 = getTheme().accent
     page.CanvasSize = UDim2.new(0, 0, 0, 0)
     page.Visible = (name == "Home")
     page.ZIndex = 6
+    page.Active = true
     page.Parent = contentArea
     pcall(function() page.ScrollingDirection = Enum.ScrollingDirection.Y end)
 
@@ -663,6 +704,23 @@ for _, tabDef in ipairs(TabDefs) do
     pagePad.Parent = page
 
     pages[name] = page
+
+    -- Auto-recalculate page size when layout content changes
+    pcall(function()
+        local layout = page:FindFirstChild("UIListLayout")
+        if layout then
+            local lastRecalc = 0
+            layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                local now = tick()
+                if now - lastRecalc > 0.1 then
+                    lastRecalc = now
+                    _delay(0.05, function()
+                        pcall(function() recalcPage(page) end)
+                    end)
+                end
+            end)
+        end
+    end)
 
     local tabBtn = Instance.new("TextButton")
     tabBtn.Name = "Tab_" .. name
@@ -1091,16 +1149,29 @@ end
 local function recalcPage(page)
     pcall(function()
         if not page or not page:IsA("ScrollingFrame") then return end
+        -- Method 1: Use UIListLayout's absolute content size
+        local layout = page:FindFirstChild("UIListLayout")
         local contentH = 0
-        for _, child in ipairs(page:GetChildren()) do
-            if child:IsA("GuiObject") and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
-                local h = child.AbsoluteSize.Y
-                if h <= 0 then h = child.Size.Y.Offset end
-                if h <= 0 then h = ELEMENT_H end
-                contentH = contentH + h + 4
+        if layout then
+            contentH = layout.AbsoluteContentSize.Y
+        end
+        -- Method 2: Fallback - iterate children
+        if contentH <= 0 then
+            for _, child in ipairs(page:GetChildren()) do
+                if child:IsA("GuiObject") and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
+                    local h = child.AbsoluteSize.Y
+                    if h <= 0 then h = child.Size.Y.Offset end
+                    if h <= 0 then h = ELEMENT_H end
+                    contentH = contentH + h + 4
+                end
             end
         end
-        local totalH = math.max(contentH + 20, page.AbsoluteSize.Y + 1)
+        local padding = page:FindFirstChild("UIPadding")
+        local padBottom = 0
+        if padding then padBottom = padding.PaddingBottom.Offset end
+        local pageH = page.AbsoluteSize.Y
+        if pageH <= 0 then pageH = MENU_H - 30 end
+        local totalH = math.max(contentH + 20 + padBottom, pageH + 1)
         page.CanvasSize = UDim2.new(0, 0, 0, totalH)
     end)
 end
@@ -1318,10 +1389,18 @@ local function updateAllThemes()
     end
     -- Update FOV circle
     if fovStroke then fovStroke.Color = theme.accent end
+    -- Update tracer dot
+    if tracerDot then tracerDot.BackgroundColor3 = theme.accent end
 end
 -- ============================================================
--- ESP SYSTEM: Tracer Lines, FOV Circle, Player Count
+-- ESP SYSTEM: Tracer Lines, FOV Circle, Player Count, FPS Counter
 -- ============================================================
+
+-- FPS counter variables
+local _lastFpsTick = 0
+local _fpsAccum = 0
+local _fpsTimeAccum = 0
+local _currentFps = 60
 
 -- FOV Circle updater
 setConn("FOVUpdate", RunService.RenderStepped:Connect(function()
@@ -1337,6 +1416,30 @@ setConn("FOVUpdate", RunService.RenderStepped:Connect(function()
         local count = #Players:GetPlayers()
         playerCountLabel.Text = T("PlayersOnline") .. ": " .. tostring(count)
 
+        -- FPS counter (tick-based calculation)
+        local now = tick()
+        if _lastFpsTick and _lastFpsTick > 0 then
+            local dt = now - _lastFpsTick
+            if dt > 0 then
+                _fpsAccum = _fpsAccum + 1
+                _fpsTimeAccum = _fpsTimeAccum + dt
+                if _fpsTimeAccum >= 0.5 then
+                    _currentFps = math.floor(_fpsAccum / _fpsTimeAccum)
+                    _fpsAccum = 0
+                    _fpsTimeAccum = 0
+                end
+            end
+        end
+        _lastFpsTick = now
+        fpsLabel.Text = "FPS: " .. tostring(_currentFps)
+        if _currentFps >= 50 then
+            fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        elseif _currentFps >= 30 then
+            fpsLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+        else
+            fpsLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+        end
+
         -- Camera FOV sync
         if States.Aim or States.SilentAim then
             camera.FieldOfView = Values.FieldOfView
@@ -1344,7 +1447,7 @@ setConn("FOVUpdate", RunService.RenderStepped:Connect(function()
     end)
 end))
 
--- Tracer Lines system (draws lines from screen bottom center to each player's head)
+-- Tracer Lines system (draws lines from convergence point at TOP CENTER of screen to each player's HEAD)
 local tracerLines = {}
 
 local function clearTracers()
@@ -1368,14 +1471,8 @@ local function drawLine(x1, y1, x2, y2, color)
     line.BorderSizePixel = 0
     line.BackgroundTransparency = 0.3
     line.ZIndex = 49
-    line.Parent = tracerContainer
     line.Rotation = math.deg(angle)
-    -- Anchor at left center
-    local anchor = Instance.new("Frame")
-    anchor.Size = UDim2.new(0, 0, 0, 0)
-    anchor.Position = UDim2.new(0, 0, 0.5, 0)
-    anchor.BackgroundTransparency = 1
-    anchor.Parent = line
+    line.Parent = tracerContainer
 
     table.insert(tracerLines, line)
     return line
@@ -1383,16 +1480,18 @@ end
 
 setConn("TracerRender", RunService.RenderStepped:Connect(function()
     clearTracers()
+    tracerDot.Visible = States.Tracers
     if not States.Tracers then return end
     pcall(function()
-        local screenCenter = Vector2.new(camera.ViewportSize.X / 2, 0) -- top center of screen
+        -- Convergence point: top center of screen
+        local screenW = camera.ViewportSize.X
+        local originX = screenW / 2
+        local originY = 0  -- very top of screen
         for _, tgt in ipairs(Players:GetPlayers()) do
             if tgt ~= player and tgt.Character and tgt.Character:FindFirstChild("Head") and tgt.Character:FindFirstChild("HumanoidRootPart") then
                 local headPos, onScreen = camera:WorldToViewportPoint(tgt.Character.Head.Position)
                 if onScreen then
-                    local headX = headPos.X
-                    local headY = headPos.Y
-                    drawLine(screenCenter.X, screenCenter.Y, headX, headY, Color3.fromRGB(255, 107, 53))
+                    drawLine(originX, originY, headPos.X, headPos.Y, Color3.fromRGB(255, 107, 53))
                 end
             end
         end
@@ -1869,6 +1968,17 @@ do
                 pcall(function()
                     if player.Character and player.Character:FindFirstChild("Humanoid") then
                         player.Character.Humanoid.WalkSpeed = Values.SpeedValue
+                        -- CFrame backup: bypass anti-cheat speed caps
+                        if player.Character:FindFirstChild("HumanoidRootPart") then
+                            local hum = player.Character.Humanoid
+                            if hum.MoveDirection.Magnitude > 0 then
+                                local speedBoost = (Values.SpeedValue - 16) * 0.015
+                                if speedBoost > 0 then
+                                    local moveDir = hum.MoveDirection.Unit
+                                    player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame + moveDir * speedBoost
+                                end
+                            end
+                        end
                     end
                 end)
             end))
@@ -1886,29 +1996,18 @@ do
     addCheckbox(p, T("Fly"), "Fly", function(v)
         killConn("Fly")
         if v then
+            pcall(function()
+                local char = player.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    pcall(function() char.Humanoid.PlatformStand = true end)
+                end
+            end)
             setConn("Fly", RunService.RenderStepped:Connect(function()
                 if not States.Fly then killConn("Fly") return end
                 pcall(function()
                     local char = player.Character
                     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
                     local hrp = char.HumanoidRootPart
-                    local bodyV = hrp:FindFirstChild("FLUYEN_FlyBV")
-                    if not bodyV then
-                        bodyV = Instance.new("BodyVelocity")
-                        bodyV.Name = "FLUYEN_FlyBV"
-                        bodyV.MaxForce = Vector3.new(math.huge,math.huge,math.huge)
-                        bodyV.Velocity = Vector3.new(0,0,0)
-                        bodyV.Parent = hrp
-                        -- Also add BodyGyro for stable flight
-                        local gyro = hrp:FindFirstChild("FLUYEN_FlyGyro")
-                        if not gyro then
-                            gyro = Instance.new("BodyGyro")
-                            gyro.Name = "FLUYEN_FlyGyro"
-                            gyro.MaxTorque = Vector3.new(math.huge,math.huge,math.huge)
-                            gyro.P = 9000
-                            gyro.Parent = hrp
-                        end
-                    end
                     local moveDir = Vector3.new(0,0,0)
                     if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
                     if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
@@ -1916,23 +2015,93 @@ do
                     if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
                     if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0,1,0) end
                     if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0,1,0) end
-                    bodyV.Velocity = moveDir * Values.FlySpeed
-                    local gyro = hrp:FindFirstChild("FLUYEN_FlyGyro")
-                    if gyro then gyro.CFrame = camera.CFrame end
+                    if moveDir.Magnitude > 0 then
+                        local newPos = hrp.CFrame.Position + moveDir.Unit * (Values.FlySpeed * 0.5)
+                        hrp.CFrame = CFrame.new(newPos, newPos + camera.CFrame.LookVector)
+                    end
+                    pcall(function() hrp.AssemblyLinearVelocity = Vector3.new(0,0,0) end)
+                    pcall(function() hrp.Velocity = Vector3.new(0,0,0) end)
                 end)
             end))
         else
             pcall(function()
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local bv = player.Character.HumanoidRootPart:FindFirstChild("FLUYEN_FlyBV")
-                    if bv then bv:Destroy() end
-                    local gy = player.Character.HumanoidRootPart:FindFirstChild("FLUYEN_FlyGyro")
-                    if gy then gy:Destroy() end
+                if player.Character then
+                    if player.Character:FindFirstChild("HumanoidRootPart") then
+                        local bv = player.Character.HumanoidRootPart:FindFirstChild("FLUYEN_FlyBV")
+                        if bv then bv:Destroy() end
+                        local gy = player.Character.HumanoidRootPart:FindFirstChild("FLUYEN_FlyGyro")
+                        if gy then gy:Destroy() end
+                    end
+                    local hum = player.Character:FindFirstChild("Humanoid")
+                    if hum then pcall(function() hum.PlatformStand = false end) end
                 end
             end)
         end
     end, "Fly")
     addSlider(p, T("FlySpeed"), "FlySpeed", 10, 200, false, nil, "FlySpeed")
+
+    addSection(p, T("LowGravity"), "LowGravity")
+    addCheckbox(p, T("LowGravity"), "LowGravity", function(v)
+        if v then
+            States.LowGravity = true
+            pcall(function()
+                workspace.Gravity = Values.LowGravityValue
+                if player.Character and player.Character:FindFirstChild("Humanoid") then
+                    player.Character.Humanoid.JumpPower = Values.LowGravityValue * 2
+                end
+            end)
+        else
+            States.LowGravity = false
+            pcall(function()
+                workspace.Gravity = 196.2
+                if player.Character and player.Character:FindFirstChild("Humanoid") then
+                    player.Character.Humanoid.JumpPower = 50
+                end
+            end)
+        end
+    end, "LowGravity")
+    addSlider(p, T("LowGravityValue"), "LowGravityValue", 10, 200, false, function(val)
+        if States.LowGravity then
+            pcall(function()
+                workspace.Gravity = val
+                if player.Character and player.Character:FindFirstChild("Humanoid") then
+                    player.Character.Humanoid.JumpPower = val * 2
+                end
+            end)
+        end
+    end, "LowGravityValue")
+
+    addSection(p, T("Freecam"), "Freecam")
+    addCheckbox(p, T("Freecam"), "Freecam", function(v)
+        killConn("Freecam")
+        if v then
+            States.Freecam = true
+            pcall(function()
+                camera.CameraType = Enum.CameraType.Scriptable
+            end)
+            setConn("Freecam", RunService.RenderStepped:Connect(function()
+                if not States.Freecam then killConn("Freecam") return end
+                pcall(function()
+                    local speed = 1
+                    local moveDir = Vector3.new(0, 0, 0)
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+                    if moveDir.Magnitude > 0 then
+                        camera.CFrame = camera.CFrame + moveDir.Unit * speed
+                    end
+                end)
+            end))
+        else
+            States.Freecam = false
+            pcall(function()
+                camera.CameraType = Enum.CameraType.Custom
+            end)
+        end
+    end, "Freecam")
 
     addSection(p, T("Noclip"), "Noclip")
     addCheckbox(p, T("Noclip"), "Noclip", function(v)
@@ -2231,6 +2400,37 @@ do
         notify(T("JoinSmallServer"), "Failed - try again", 3)
     end, "JoinSmallServer")
 
+    addSection(p, T("Respawn"), "Respawn")
+    addButton(p, T("Respawn"), function()
+        pcall(function()
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.Health = 0
+                notify(T("Respawn"), T("Enabled"), 2)
+            end
+        end)
+    end, "Respawn")
+
+    addButton(p, T("TeleportToSpawn"), function()
+        pcall(function()
+            local spawn = nil
+            for _, obj in ipairs(workspace:GetChildren()) do
+                if obj:IsA("SpawnLocation") then
+                    spawn = obj
+                    break
+                end
+            end
+            if not spawn then
+                spawn = workspace:FindFirstChild("SpawnLocation")
+            end
+            if spawn and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = spawn.CFrame + Vector3.new(0, 3, 0)
+                notify(T("TeleportToSpawn"), "Teleported!", 2)
+            else
+                notify(T("TeleportToSpawn"), "No spawn found!", 2)
+            end
+        end)
+    end, "TeleportToSpawn")
+
     addSection(p, T("PlayerList"), "PlayerList")
     local spectateNames = {}
     for _, p2 in ipairs(Players:GetPlayers()) do
@@ -2291,6 +2491,12 @@ do
                 pcall(function()
                     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local hrp = player.Character.HumanoidRootPart
+                        local floatY = math.sin(tick() * 2) * 5
+                        -- Primary: AssemblyLinearVelocity (modern method)
+                        pcall(function()
+                            hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, floatY, hrp.AssemblyLinearVelocity.Z)
+                        end)
+                        -- Fallback: BodyVelocity (legacy method for Delta)
                         local bv = hrp:FindFirstChild("FLUYEN_FloatBV")
                         if not bv then
                             bv = Instance.new("BodyVelocity")
@@ -2299,7 +2505,7 @@ do
                             bv.Velocity = Vector3.new(0, 0, 0)
                             bv.Parent = hrp
                         end
-                        bv.Velocity = Vector3.new(0, math.sin(tick() * 2) * 5, 0)
+                        bv.Velocity = Vector3.new(0, floatY, 0)
                     end
                 end)
             end))
@@ -2332,11 +2538,13 @@ do
     addButton(p, T("Fling"), function()
         pcall(function()
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                player.Character.HumanoidRootPart.Velocity = Vector3.new(
+                local flingV = Vector3.new(
                     math.random(-Values.FlingPower, Values.FlingPower),
                     math.random(200, Values.FlingPower),
                     math.random(-Values.FlingPower, Values.FlingPower)
                 )
+                pcall(function() player.Character.HumanoidRootPart.AssemblyLinearVelocity = flingV end)
+                pcall(function() player.Character.HumanoidRootPart.Velocity = flingV end)
             end
         end)
     end, "Fling")
@@ -2467,6 +2675,9 @@ do
         Values.OrbitSpeed = 1
         Values.FlingPower = 500
         Values.FieldOfView = 70
+        Values.LowGravityValue = 50
+        pcall(function() workspace.Gravity = 196.2 end)
+        pcall(function() camera.CameraType = Enum.CameraType.Custom end)
         currentTheme = "Dark"
         currentLang = "EN"
         updateAllThemes()
@@ -2564,8 +2775,16 @@ end)
 -- INITIAL RECALC & NOTIFICATION
 -- ============================================================
 recalcCurrentPage()
-_delay(2, function()
-    recalcCurrentPage()
+_delay(1, function()
+    -- Recalc all pages after UI has rendered (fixes scroll not working)
+    for pageName, page in pairs(pages) do
+        recalcPage(page)
+    end
+end)
+_delay(3, function()
+    for pageName, page in pairs(pages) do
+        recalcPage(page)
+    end
 end)
 
 _delay(0.5, function()
